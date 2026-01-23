@@ -1,0 +1,176 @@
+services:
+  phpmyadminimprimante:
+    image: phpmyadmin/phpmyadmin:5.2.1
+    platform: linux/amd64
+    depends_on:
+      - mybdimprimante
+    ports:
+      - 30201:80
+    environment:
+      PMA_HOST: mybdimprimante
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      UPLOAD_LIMIT: 256M
+
+  appfrontend:
+    image: ghcr.io/it-rengus/dgtt-frontend-admin:dev-latest
+    restart: always
+    platform: linux/amd64
+    ports:
+      - 30153:3000
+    environment:
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - NEXT_PUBLIC_URL_FRONT_PUBLIC=${NEXT_PUBLIC_URL_FRONT_PUBLIC}
+      - NEXT_PUBLIC_API_AUTH_TOKEN=${NEXT_PUBLIC_API_AUTH_TOKEN}
+      - NEXT_PUBLIC_SHORT_CODE_VERIFY=auto
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
+      - MINIO_PORT=${MINIO_PORT}
+      - MINIO_ENDPOINT_GET=${MINIO_ENDPOINT_GET}
+      - MINIO_PORT_GET=${MINIO_PORT_GET}
+      - MINIO_SSL=${MINIO_SSL}
+      - AUTHENTIK_ISSUER=${AUTHENTIK_ISSUER}
+      - AUTHENTIK_WELLKNOWN=${AUTHENTIK_WELLKNOWN}
+      - AUTHENTIK_CLIENT_ID=${AUTHENTIK_CLIENT_ID}
+      - AUTHENTIK_CLIENT_SECRET=${AUTHENTIK_CLIENT_SECRET}
+    depends_on:
+      - backlogic
+
+  appfrontendprod:
+    image: ghcr.io/it-rengus/dgtt-frontend-admin:latest
+    restart: always
+    platform: linux/amd64
+    ports:
+      - 30353:3000
+    environment:
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - NEXT_PUBLIC_URL_FRONT_PUBLIC=${NEXT_PUBLIC_URL_FRONT_PUBLIC}
+      - NEXT_PUBLIC_API_AUTH_TOKEN=${NEXT_PUBLIC_API_AUTH_TOKEN}
+      - NEXT_PUBLIC_SHORT_CODE_VERIFY=auto
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
+      - MINIO_PORT=${MINIO_PORT}
+      - MINIO_ENDPOINT_GET=${MINIO_ENDPOINT_GET}
+      - MINIO_PORT_GET=${MINIO_PORT_GET}
+      - MINIO_SSL=${MINIO_SSL}
+      - AUTHENTIK_ISSUER=${AUTHENTIK_ISSUER}
+      - AUTHENTIK_WELLKNOWN=${AUTHENTIK_WELLKNOWN}
+      - AUTHENTIK_CLIENT_ID=${AUTHENTIK_CLIENT_ID}
+      - AUTHENTIK_CLIENT_SECRET=${AUTHENTIK_CLIENT_SECRET}
+    depends_on:
+      - backlogic
+
+  appfrontendpublic:
+    image: ghcr.io/it-rengus/dgtt-fronted-public:latest
+    restart: always
+    platform: linux/amd64
+    ports:
+      - 30203:3000
+    environment:
+      - NEXT_PUBLIC_SHORT_CODE_VERIFY=auto
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - MINIO_ENDPOINT_GET=${MINIO_ENDPOINT_GET}
+      - MINIO_PORT_GET=${MINIO_PORT_GET}
+      - MINIO_SSL=${MINIO_SSL}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+    depends_on:
+      - backlogic
+
+  appfrontendpublicprod:
+    image: ghcr.io/it-rengus/dgtt-fronted-public:latest
+    restart: always
+    platform: linux/amd64
+    ports:
+      - 30403:3000
+    environment:
+      - NEXT_PUBLIC_SHORT_CODE_VERIFY=auto
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - MINIO_ENDPOINT_GET=${MINIO_ENDPOINT_GET}
+      - MINIO_PORT_GET=${MINIO_PORT_GET}
+      - MINIO_SSL=${MINIO_SSL}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+    depends_on:
+      - backlogic
+
+  minio:
+    image: quay.io/minio/minio
+    platform: linux/amd64
+    restart: always
+    ports:
+      - 30155:9000
+      - 30156:9001
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    volumes:
+      - ./minio:/data
+    command: server /data --console-address ":9001"
+  mybd:
+    image: postgres:16.0
+    ports:
+      - "5432:5432"
+    platform: linux/amd64
+    restart: always
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ceipi
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+
+  
+
+  mybdimprimante:
+    image: mysql:5.7
+    command: --sql_mode="STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"
+    restart: always
+    platform: linux/amd64
+    ports:
+      - 30305:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ceipi
+      MYSQL_ROOT_HOST: "%"
+    volumes:
+      - ./databasemysqlimp:/var/lib/mysql
+
+  backlogic:
+    image: ghcr.io/it-rengus/dgtt-backend-logic:latest
+    restart: always
+    platform: linux/amd64
+    environment:
+      - DATABASE_URL=${DATABASE_URL_BACKLOGIC}
+      - JWT_PASSPHRASE=${JWT_PASSPHRASE}
+      - APP_SECRET=${APP_SECRET}
+      - APP_ENV=${APP_ENV}
+      - DGTT_API_URL=${DGTT_API_URL}
+      - DGTT_API_KEY=${DGTT_API_KEY}
+      - API_AUTH_TOKEN=${API_AUTH_TOKEN}
+      - POWER_BI_CLIENT_ID=${POWER_BI_CLIENT_ID}
+      - EXTERNAL_API_KEYS="ext_a3f7b2c1d5e8f1a29b3c4d5e6f7a8b9c:Service examen"
+    depends_on:
+      - mybd
+    ports:
+      - 30154:8000
+    entrypoint: /bin/sh -c "ln -sf /var/www/html/.env.devops /var/www/html/.env && docker-php-entrypoint php -S 0.0.0.0:8000 -t public"
+
+  backlogicimprimante:
+    image: ghcr.io/it-rengus/dgtt-backend-imprimante:latest
+    restart: always
+    platform: linux/amd64
+    depends_on:
+      - phpmyadminimprimante
+    environment:
+      - APP_ENV=${APP_ENV}
+      - APP_SECRET=${APP_SECRET}
+      - DATABASE_URL=${DATABASE_URL_IMPRIMANTE}
+      - JWT_PASSPHRASE=${JWT_PASSPHRASE}
+      - CARD_PRESSO_API_KEY=${CARD_PRESSO_API_KEY}
+      - URL_FRONT_UUID_QR_CODE_PERMIS=${URL_FRONT_UUID_QR_CODE_PERMIS}
+      - URL_FRONT_UUID_QR_CODE_CARTE_GRISE=${URL_FRONT_UUID_QR_CODE_CARTE_GRISE}
+    ports:
+      - 30202:8000
+    entrypoint: /bin/sh -c "ln -sf /var/www/html/.env.devops /var/www/html/.env && docker-php-entrypoint php -S 0.0.0.0:8000 -t public"
